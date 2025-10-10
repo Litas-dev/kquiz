@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Klausimų kūrimo įrankis (q/correct/wrong/cat/diff/note)</title>
+<style>
+:root{--bg:#0b1426;--card:#13233d;--ink:#e6edf7;--mut:#9fb3d4;--pri:#3b82f6;--ok:#10b981;--err:#ef4444}
+*{box-sizing:border-box}body{margin:0;font:14px/1.4 system-ui,Segoe UI,Roboto,Arial;background:var(--bg);color:var(--ink)}
+header{padding:14px 18px;border-bottom:1px solid #1f2e4a;background:#0f1a2f}
+main{display:grid;grid-template-columns:520px 1fr;gap:16px;padding:16px}
+.card{background:var(--card);border:1px solid #1f2e4a;border-radius:12px;padding:14px}
+label{display:block;font-weight:700;margin:10px 0 6px}
+textarea,input,select{width:100%;padding:10px;border-radius:8px;border:1px solid #274067;background:#0f1a2f;color:var(--ink)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.optgrid{display:grid;grid-template-columns:1fr;gap:8px}
+.pill{display:inline-block;padding:6px 10px;border-radius:999px;border:1px solid #274067;background:#0f1a2f;color:var(--mut);margin-right:8px}
+.btn{cursor:pointer;background:var(--pri);border:none;color:#fff;font-weight:800;padding:10px 14px;border-radius:10px}
+.btn.sec{background:#22314a}.btn.good{background:var(--ok)}.btn.bad{background:var(--err)}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap}
+.list{max-height:460px;overflow:auto;border-top:1px dashed #274067;margin-top:10px;padding-top:10px}
+.item{display:grid;grid-template-columns:30px 1fr auto;gap:10px;align-items:start;padding:8px;border:1px solid #233456;border-radius:10px;margin-bottom:8px;background:#0f1a2f}
+.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:#c8d7f0}
+.muted{color:var(--mut)}
+@media (max-width:1100px){main{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div class="toolbar">
+    <span class="pill">Formatas: <b>[{ q, correct, wrong[3], cat, diff, note }]</b></span>
+    <input type="file" id="importFile" accept=".json" class="pill" title="Importuoti JSON"/>
+    <button class="btn sec" id="btnImport">Importuoti JSON</button>
+    <button class="btn" id="btnDownload">Atsisiųsti JSON</button>
+    <span class="pill" id="countInfo">0 klausimų</span>
+  </div>
+</header>
+
+<main>
+  <!-- Forma -->
+  <section class="card">
+    <h3>Naujas klausimas</h3>
+
+    <label for="q">Klausimas</label>
+    <textarea id="q" rows="3" placeholder="Įrašykite klausimą" required></textarea>
+
+    <label for="correct">Teisingas atsakymas</label>
+    <input id="correct" type="text" placeholder="Teisingas atsakymas"/>
+
+    <label>Neteisingi atsakymai (tiksliai 3)</label>
+    <div class="optgrid">
+      <input id="w1" type="text" placeholder="Neteisingas #1"/>
+      <input id="w2" type="text" placeholder="Neteisingas #2"/>
+      <input id="w3" type="text" placeholder="Neteisingas #3"/>
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="cat">Kategorija</label>
+        <input id="cat" type="text" placeholder="pvz., Istorija, Kalbos"/>
+      </div>
+      <div>
+        <label for="diff">Sunkumas</label>
+        <select id="diff">
+          <option value="easy">easy</option>
+          <option value="medium">medium</option>
+          <option value="hard" selected>hard</option>
+        </select>
+      </div>
+    </div>
+
+    <label for="note">Pastaba (nebūtina)</label>
+    <textarea id="note" rows="2" placeholder="Trumpa pastaba / paaiškinimas (nebūtina)"></textarea>
+
+    <div class="toolbar" style="margin-top:10px">
+      <button class="btn good" id="btnAdd">Pridėti į sąrašą</button>
+      <button class="btn sec" id="btnClear">Išvalyti formą</button>
+      <span class="muted">Validacija: 1 teisingas, 3 neteisingi, be tuščių reikšmių.</span>
+    </div>
+  </section>
+
+  <!-- Sąrašas + JSON -->
+  <section class="card">
+    <h3>Sąrašas ir JSON peržiūra</h3>
+    <div class="list" id="list"></div>
+    <label>JSON</label>
+    <textarea id="jsonOut" class="mono" rows="12" readonly></textarea>
+  </section>
+</main>
+
+<script>
+(function(){
+  const el = id=>document.getElementById(id);
+  const E = {
+    q:el('q'), correct:el('correct'), w1:el('w1'), w2:el('w2'), w3:el('w3'),
+    cat:el('cat'), diff:el('diff'), note:el('note'),
+    list:el('list'), jsonOut:el('jsonOut'),
+    btnAdd:el('btnAdd'), btnClear:el('btnClear'),
+    btnDownload:el('btnDownload'), countInfo:el('countInfo'),
+    importFile:el('importFile'), btnImport:el('btnImport')
+  };
+  let data=[];
+
+  const t=s=>String(s||'').trim();
+  const escapeHtml=s=>String(s).replace(/[&<>"']/g,c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+
+  function buildItem(){
+    const q=t(E.q.value), correct=t(E.correct.value);
+    const wrong=[t(E.w1.value), t(E.w2.value), t(E.w3.value)];
+    const cat=t(E.cat.value), diff=t(E.diff.value), note=t(E.note.value);
+    if(!q) return alert('Įrašykite klausimą.');
+    if(!correct) return alert('Įrašykite teisingą atsakymą.');
+    if(wrong.some(x=>!x)) return alert('Užpildykite visus 3 neteisingus atsakymus.');
+    // dedupe: teisingas negali kartotis tarp wrong
+    if(wrong.map(x=>x.toLowerCase()).includes(correct.toLowerCase()))
+      return alert('Teisingas atsakymas kartojasi tarp neteisingų.');
+    return { q, correct, wrong, cat, diff, note };
+  }
+
+  function render(){
+    E.jsonOut.value = JSON.stringify(data, null, 2);
+    E.countInfo.textContent = data.length + ' klausimų';
+    E.list.innerHTML='';
+    data.forEach((it,i)=>{
+      const row=document.createElement('div'); row.className='item';
+      const idx=document.createElement('div'); idx.textContent=i+1;
+      const body=document.createElement('div');
+      const wrongHtml = it.wrong.map(w=>`<li>${escapeHtml(w)}</li>`).join('');
+      body.innerHTML = `
+        <div><b>${escapeHtml(it.q)}</b></div>
+        <div class="muted" style="margin-top:6px">
+          <div>✅ Teisingas: <b>${escapeHtml(it.correct)}</b></div>
+          <div>❌ Neteisingi:</div>
+          <ul style="margin:6px 0 0 16px">${wrongHtml}</ul>
+          <div style="margin-top:6px">Kategorija: <b>${escapeHtml(it.cat||'-')}</b>, Sunkumas: <b>${escapeHtml(it.diff||'-')}</b></div>
+          ${it.note? `<div style="margin-top:6px">Pastaba: ${escapeHtml(it.note)}</div>`:''}
+        </div>`;
+      const act=document.createElement('div');
+      const bDel=btn('Šalinti','bad',()=>{ data.splice(i,1); render(); });
+      const bUp =btn('↑','sec',()=>{ if(i>0){ [data[i-1],data[i]]=[data[i],data[i-1]]; render(); }});
+      const bDn =btn('↓','sec',()=>{ if(i<data.length-1){ [data[i+1],data[i]]=[data[i],data[i+1]]; render(); }});
+      act.append(bUp,bDn,bDel);
+      row.append(idx,body,act);
+      E.list.appendChild(row);
+    });
+  }
+
+  function btn(txt,cls,on){const b=document.createElement('button'); b.className='btn '+cls; b.textContent=txt; b.onclick=on; return b;}
+
+  function clearForm(){ E.q.value=''; E.correct.value=''; E.w1.value=''; E.w2.value=''; E.w3.value=''; E.cat.value=''; E.diff.value='hard'; E.note.value=''; E.q.focus(); }
+
+  E.btnAdd.onclick=()=>{ const item=buildItem(); if(!item) return; data.push(item); render(); clearForm(); };
+  E.btnClear.onclick=clearForm;
+
+  E.btnDownload.onclick=()=>{
+    if(!data.length) return alert('Nėra ką atsisiųsti.');
+    const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=url; a.download='questions.json'; document.body.appendChild(a); a.click();
+    setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); },0);
+  };
+
+  E.btnImport.onclick=async ()=>{
+    const f=E.importFile.files?.[0]; if(!f) return alert('Pasirinkite JSON failą.');
+    try{
+      const txt=await f.text(); const arr=JSON.parse(txt);
+      if(!Array.isArray(arr)) throw new Error('Blogas formatas (ne masyvas).');
+      const ok = arr.every(x=> x && typeof x.q==='string' &&
+        typeof x.correct==='string' &&
+        Array.isArray(x.wrong) && x.wrong.length===3 &&
+        typeof x.cat==='string' && typeof x.diff==='string' &&
+        Object.prototype.hasOwnProperty.call(x,'note'));
+      if(!ok) throw new Error('Struktūra neatitinka q/correct/wrong[3]/cat/diff/note.');
+      data = arr; render(); alert('Importuota.');
+    }catch(e){ alert('Nepavyko importuoti: '+e.message); }
+  };
+
+  // live preview JSON of current form + dataset
+  ['input','change'].forEach(evt=>{
+    [E.q,E.correct,E.w1,E.w2,E.w3,E.cat,E.diff,E.note].forEach(x=>{
+      x.addEventListener(evt, ()=>{
+        const it=buildItem();
+        const preview = it ? [it].concat(data) : data.slice();
+        E.jsonOut.value = JSON.stringify(preview, null, 2);
+      });
+    });
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
