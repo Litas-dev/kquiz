@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>KQuiz — Klausimų kūrėjas (be pranešimų)</title>
+  <title>KQuiz — Klausimų kūrėjas (LT, be pranešimų)</title>
   <style>
     :root{--bg:#0f1115;--panel:#161a22;--muted:#9aa4b2;--text:#e6e9ef;--accent:#4da3ff;--danger:#ff5d5d;--radius:14px;--gap:12px;--maxw:760px}
     *{box-sizing:border-box}
@@ -77,13 +77,27 @@
         </div>
       </div>
 
+      <div class="grid-2">
+        <div>
+          <label for="cat">Kategorija (nebūtina)</label>
+          <input id="cat" type="text" placeholder="pvz., Istorija, Sportas" />
+        </div>
+        <div>
+          <label for="diff">Sunkumas</label>
+          <select id="diff">
+            <option value="hard">Sunku</option>
+            <option value="medium">Vidutinis</option>
+            <option value="easy">Lengva</option>
+          </select>
+        </div>
+      </div>
+
       <div class="btns">
         <button class="primary" id="addBtn">Pridėti klausimą</button>
         <button class="ghost" id="downloadBtn">Atsisiųsti JSON</button>
         <button class="danger" id="clearBtn" title="Išvalyti tik formą">Išvalyti formą</button>
       </div>
 
-      <p class="hint">Patarimas: galima įklijuoti su naujomis eilutėmis. Jokio „oninput“. Jokio triukšmo.</p>
       <p id="inlineMsg" class="hint" aria-live="polite"></p>
     </section>
 
@@ -95,42 +109,48 @@
   </main>
 
   <script>
+    // Būsena
     const data = [];
+
+    // Elementai
     const $ = id => document.getElementById(id);
-    const q = $("q"), a=$("a"), b=$("b"), c=$("c"), d=$("d"), correct=$("correct"), note=$("note");
+    const q=$("q"), a=$("a"), b=$("b"), c=$("c"), d=$("d"), correct=$("correct"), note=$("note");
+    const cat=$("cat"), diff=$("diff");
     const addBtn=$("addBtn"), downloadBtn=$("downloadBtn"), list=$("list"), count=$("count"), msg=$("inlineMsg"), clearBtn=$("clearBtn");
 
-    function inform(text, color="#9aa4b2"){ msg.textContent = text || ""; msg.style.color = color; }
-    function sanitize(s){ return (s||"").trim(); }
+    // Pagalbinės
+    function inform(text, color="#9aa4b2"){ msg.textContent=text||""; msg.style.color=color; }
+    function s(v){ return (v||"").trim(); }
 
-    function validateOnce() {
-      const Q = sanitize(q.value), A = sanitize(a.value), B = sanitize(b.value), C = sanitize(c.value), D = sanitize(d.value);
-      const K = sanitize(correct.value);
+    function validateOnce(){
+      const Q=s(q.value), A=s(a.value), B=s(b.value), C=s(c.value), D=s(d.value), K=s(correct.value);
       if(!Q) return {ok:false, why:"Reikalingas klausimas."};
-      const opts = [A,B,C,D];
-      if(opts.some(v => !v)) return {ok:false, why:"Reikalingi visi keturi atsakymai."};
+      if(!A||!B||!C||!D) return {ok:false, why:"Reikalingi visi keturi atsakymai."};
       if(!["A","B","C","D"].includes(K)) return {ok:false, why:"Pasirink teisingą variantą."};
-      const uniq = new Set(opts.map(v => v.toLowerCase()));
-      if(uniq.size < 4) return {ok:false, why:"Atsakymai turi skirtis."};
+      const uniq=new Set([A,B,C,D].map(x=>x.toLowerCase()));
+      if(uniq.size<4) return {ok:false, why:"Atsakymai turi skirtis."};
       return {ok:true};
     }
 
-    function render() {
-      list.innerHTML = "";
+    function escapeHtml(s){
+      return s.replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    }
+
+    function render(){
+      list.innerHTML="";
       count.textContent = data.length + (data.length===1 ? " įrašas" : " įrašų");
-      data.forEach((item, idx)=>{
-        const el = document.createElement("div");
-        el.className = "item";
-        el.innerHTML = `
-          <h4>${idx+1}. ${escapeHtml(item.question)}</h4>
+      data.forEach((it,idx)=>{
+        const el=document.createElement("div");
+        el.className="item";
+        el.innerHTML=`
+          <h4>${idx+1}. ${escapeHtml(it.q)}</h4>
           <div>
-            <span class="pill">A: ${escapeHtml(item.answers[0])}</span>
-            <span class="pill">B: ${escapeHtml(item.answers[1])}</span>
-            <span class="pill">C: ${escapeHtml(item.answers[2])}</span>
-            <span class="pill">D: ${escapeHtml(item.answers[3])}</span>
-            <span class="pill" style="background:#132b1d;color:#b5f3c8">Teisingas: ${item.correct}</span>
+            <span class="pill" style="background:#132b1d;color:#b5f3c8">Teisingas: ${escapeHtml(it.correct)}</span>
+            ${it.wrong.map(w=>`<span class="pill">${escapeHtml(w)}</span>`).join("")}
+            ${it.cat?`<span class="pill">Kategorija: ${escapeHtml(it.cat)}</span>`:""}
+            <span class="pill">Sunkumas: ${escapeHtml(it.diff)}</span>
           </div>
-          ${item.note ? `<p class="hint" style="margin:.6rem 0 0">${escapeHtml(item.note)}</p>` : ""}
+          ${it.note?`<p class="hint" style="margin:.6rem 0 0">${escapeHtml(it.note)}</p>`:""}
           <div class="btns" style="margin-top:10px">
             <button class="ghost" data-act="edit" data-i="${idx}">Redaguoti</button>
             <button class="danger" data-act="remove" data-i="${idx}">Pašalinti</button>
@@ -140,67 +160,85 @@
       });
     }
 
-    function escapeHtml(s){
-      return s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    function clearForm(){
+      q.value=a.value=b.value=c.value=d.value=note.value=cat.value="";
+      correct.value=""; diff.value="hard";
+      inform(""); q.focus();
     }
 
-    function clearForm() {
-      q.value = a.value = b.value = c.value = d.value = note.value = "";
-      correct.value = "";
-      inform("");
-      q.focus();
-    }
+    // Pridėti: suformuoja norimą schemą { q, correct, wrong[], cat, diff, note }
+    addBtn.addEventListener("click", ()=>{
+      const check=validateOnce();
+      if(!check.ok){ inform(check.why,"#ff8080"); return; }
 
-    addBtn.addEventListener("click", () => {
-      const check = validateOnce();
-      if(!check.ok){ inform(check.why, "#ff8080"); return; }
-      const item = {
-        question: sanitize(q.value),
-        answers: [sanitize(a.value), sanitize(b.value), sanitize(c.value), sanitize(d.value)],
-        correct: sanitize(correct.value),
-        note: sanitize(note.value)
+      const opts=[s(a.value),s(b.value),s(c.value),s(d.value)];
+      const k=s(correct.value);           // "A"|"B"|"C"|"D"
+      const kIdx={A:0,B:1,C:2,D:3}[k];
+      const correctText=opts[kIdx];
+      const wrong=opts.filter((_,i)=>i!==kIdx);
+
+      const item={
+        q:s(q.value),
+        correct: correctText,
+        wrong: wrong,
+        cat: s(cat.value),
+        diff: s(diff.value)||"hard",
+        note: s(note.value)
       };
+
       data.push(item);
       render();
       clearForm();
-      inform("Įrašyta.", "#7ad27a");
+      inform("Įrašyta.","#7ad27a");
     });
 
-    list.addEventListener("click", (e)=>{
-      const btn = e.target.closest("button"); if(!btn) return;
-      const act = btn.dataset.act, i = +btn.dataset.i;
-      if(Number.isNaN(i) || !data[i]) return;
-      if(act==="remove"){ data.splice(i,1); render(); inform("Pašalinta.", "#ffb27a"); }
+    // Redagavimas ir šalinimas
+    list.addEventListener("click",(e)=>{
+      const btn=e.target.closest("button"); if(!btn) return;
+      const act=btn.dataset.act, i=+btn.dataset.i;
+      if(Number.isNaN(i)||!data[i]) return;
+
+      if(act==="remove"){ data.splice(i,1); render(); inform("Pašalinta.","#ffb27a"); }
+
       if(act==="edit"){
-        const it = data[i];
-        q.value = it.question;
-        a.value = it.answers[0]; b.value = it.answers[1]; c.value = it.answers[2]; d.value = it.answers[3];
-        correct.value = it.correct; note.value = it.note || "";
+        const it=data[i];
+        // Atstatome į A-D: A=teisingas, B-D=wrong
+        const opts=[it.correct, ...(it.wrong||[])];
+        q.value=it.q||"";
+        a.value=opts[0]||""; b.value=opts[1]||""; c.value=opts[2]||""; d.value=opts[3]||"";
+        correct.value="A";
+        note.value=it.note||"";
+        cat.value=it.cat||"";
+        diff.value=it.diff||"hard";
         data.splice(i,1);
         render();
-        inform("Įkelta į formą redagavimui.", "#c7d3ff");
+        inform("Įkelta į formą redagavimui.","#c7d3ff");
         q.focus();
       }
     });
 
-    downloadBtn.addEventListener("click", () => {
-      if(data.length===0){ inform("Nėra ką eksportuoti.", "#ff8080"); return; }
-      const blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
-      const aTag = document.createElement("a");
-      aTag.href = URL.createObjectURL(blob);
-      aTag.download = "kquiz_klausimai.json";
+    // Eksportas: tiksliai tokia pati schema
+    downloadBtn.addEventListener("click", ()=>{
+      if(data.length===0){ inform("Nėra ką eksportuoti.","#ff8080"); return; }
+      const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+      const aTag=document.createElement("a");
+      aTag.href=URL.createObjectURL(blob);
+      aTag.download="questions.json";
       document.body.appendChild(aTag);
       aTag.click();
       aTag.remove();
-      inform("JSON atsisiųstas.", "#7ad27a");
+      inform("JSON atsisiųstas.","#7ad27a");
     });
 
     clearBtn.addEventListener("click", clearForm);
 
-    q.addEventListener("input", () => {
-      q.style.height = "auto";
-      q.style.height = Math.min(q.scrollHeight, 300) + "px";
+    // NĖRA oninput validacijos. Tik patogus autosize klausimui.
+    $("q").addEventListener("input", ()=>{
+      q.style.height="auto";
+      q.style.height=Math.min(q.scrollHeight,300)+"px";
     });
   </script>
 </body>
 </html>
+
+
