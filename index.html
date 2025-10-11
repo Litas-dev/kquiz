@@ -1,31 +1,23 @@
 <!doctype html>
-<html lang="en">
+<html lang="lt">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>KQuiz — Question Builder (No popups)</title>
+  <title>KQuiz — Klausimų kūrėjas (be pranešimų)</title>
   <style>
-    :root {
-      --bg:#0f1115; --panel:#161a22; --muted:#9aa4b2; --text:#e6e9ef; --accent:#4da3ff; --danger:#ff5d5d;
-      --radius:14px; --gap:12px; --maxw:760px;
-    }
+    :root{--bg:#0f1115;--panel:#161a22;--muted:#9aa4b2;--text:#e6e9ef;--accent:#4da3ff;--danger:#ff5d5d;--radius:14px;--gap:12px;--maxw:760px}
     *{box-sizing:border-box}
     html,body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Ubuntu,Arial,sans-serif}
     .wrap{max-width:var(--maxw);margin:0 auto;padding:18px}
     .card{background:var(--panel);border-radius:var(--radius);padding:16px 14px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
     .row{display:grid;grid-template-columns:1fr;gap:var(--gap)}
     label{font-size:.9rem;color:var(--muted)}
-    input[type="text"], textarea, select{
-      width:100%;padding:14px 12px;border:1px solid #242a36;background:#0b0e14;color:var(--text);
-      border-radius:12px;font-size:16px;outline:none
-    }
+    input[type="text"],textarea,select{width:100%;padding:14px 12px;border:1px solid #242a36;background:#0b0e14;color:var(--text);border-radius:12px;font-size:16px;outline:none}
     textarea{min-height:90px;resize:vertical}
     .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap)}
-    @media (max-width:520px){ .grid-2{grid-template-columns:1fr} }
+    @media (max-width:520px){.grid-2{grid-template-columns:1fr}}
     .btns{display:flex;gap:10px;flex-wrap:wrap}
-    button{
-      border:0;padding:12px 14px;border-radius:12px;cursor:pointer;font-weight:600;font-size:15px
-    }
+    button{border:0;padding:12px 14px;border-radius:12px;cursor:pointer;font-weight:600;font-size:15px}
     .primary{background:var(--accent);color:#06101f}
     .ghost{background:transparent;color:var(--text);border:1px solid #2a3342}
     .danger{background:transparent;color:var(--danger);border:1px solid #3a2226}
@@ -35,106 +27,97 @@
     .item{background:#0b0e14;border:1px solid #1e2430;border-radius:12px;padding:12px}
     .item h4{margin:.2rem 0 .4rem 0;font-size:1rem}
     .pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#1a2635;color:#bcd2f0;font-size:.75rem;margin-right:6px}
-    .sr{position:absolute;left:-9999px}
-    /* Large touch targets */
     input,textarea,select,button{min-height:44px}
   </style>
 </head>
 <body>
   <main class="wrap">
-    <h1 style="margin:0 0 14px">KQuiz — Question Builder</h1>
-    <p class="hint" style="margin-top:-6px">Zero popups. Type freely. Validation occurs only when you add or export.</p>
+    <h1 style="margin:0 0 14px">KQuiz — Klausimų kūrėjas</h1>
+    <p class="hint" style="margin-top:-6px">Jokių iššokančių langų. Rašyk laisvai. Tikrinama tik spaudžiant „Pridėti“ arba „Atsisiųsti“.</p>
 
     <section class="card row" id="formCard">
       <div class="row">
         <div>
-          <label for="q">Question</label>
-          <textarea id="q" placeholder="Write the full question"></textarea>
+          <label for="q">Klausimas</label>
+          <textarea id="q" placeholder="Įrašyk pilną klausimą"></textarea>
         </div>
       </div>
 
       <div class="grid-2">
         <div>
-          <label for="a">Answer A</label>
-          <input id="a" type="text" placeholder="Option A" />
+          <label for="a">Atsakymas A</label>
+          <input id="a" type="text" placeholder="Variantas A" />
         </div>
         <div>
-          <label for="b">Answer B</label>
-          <input id="b" type="text" placeholder="Option B" />
+          <label for="b">Atsakymas B</label>
+          <input id="b" type="text" placeholder="Variantas B" />
         </div>
         <div>
-          <label for="c">Answer C</label>
-          <input id="c" type="text" placeholder="Option C" />
+          <label for="c">Atsakymas C</label>
+          <input id="c" type="text" placeholder="Variantas C" />
         </div>
         <div>
-          <label for="d">Answer D</label>
-          <input id="d" type="text" placeholder="Option D" />
+          <label for="d">Atsakymas D</label>
+          <input id="d" type="text" placeholder="Variantas D" />
         </div>
       </div>
 
       <div class="grid-2">
         <div>
-          <label for="correct">Correct answer</label>
+          <label for="correct">Teisingas variantas</label>
           <select id="correct">
-            <option value="">Select</option>
+            <option value="">Pasirink</option>
             <option value="A">A</option><option value="B">B</option>
             <option value="C">C</option><option value="D">D</option>
           </select>
         </div>
         <div>
-          <label for="note">Note (optional)</label>
-          <input id="note" type="text" placeholder="Explanation, source, hint" />
+          <label for="note">Pastaba (nebūtina)</label>
+          <input id="note" type="text" placeholder="Paaiškinimas, šaltinis ar užuomina" />
         </div>
       </div>
 
       <div class="btns">
-        <button class="primary" id="addBtn">Add question</button>
-        <button class="ghost" id="downloadBtn">Download JSON</button>
-        <button class="danger" id="clearBtn" title="Clear inputs only">Clear form</button>
+        <button class="primary" id="addBtn">Pridėti klausimą</button>
+        <button class="ghost" id="downloadBtn">Atsisiųsti JSON</button>
+        <button class="danger" id="clearBtn" title="Išvalyti tik formą">Išvalyti formą</button>
       </div>
 
-      <p class="hint">Tip: paste with newlines. No auto-toasts. No keystroke validation.</p>
+      <p class="hint">Patarimas: galima įklijuoti su naujomis eilutėmis. Jokio „oninput“. Jokio triukšmo.</p>
       <p id="inlineMsg" class="hint" aria-live="polite"></p>
     </section>
 
-    <h3 class="section-title">Draft set</h3>
+    <h3 class="section-title">Juodraštis</h3>
     <section class="card">
-      <div id="count" class="hint">0 items</div>
+      <div id="count" class="hint">0 įrašų</div>
       <div id="list" class="list" role="list"></div>
     </section>
   </main>
 
   <script>
-    // State
     const data = [];
-
-    // Elements
     const $ = id => document.getElementById(id);
     const q = $("q"), a=$("a"), b=$("b"), c=$("c"), d=$("d"), correct=$("correct"), note=$("note");
     const addBtn=$("addBtn"), downloadBtn=$("downloadBtn"), list=$("list"), count=$("count"), msg=$("inlineMsg"), clearBtn=$("clearBtn");
 
-    // Utility: soft inline message (non-blocking, no alerts)
     function inform(text, color="#9aa4b2"){ msg.textContent = text || ""; msg.style.color = color; }
-
     function sanitize(s){ return (s||"").trim(); }
 
     function validateOnce() {
-      // Run only on explicit actions
       const Q = sanitize(q.value), A = sanitize(a.value), B = sanitize(b.value), C = sanitize(c.value), D = sanitize(d.value);
       const K = sanitize(correct.value);
-      if(!Q) return {ok:false, why:"Question is required."};
+      if(!Q) return {ok:false, why:"Reikalingas klausimas."};
       const opts = [A,B,C,D];
-      if(opts.some(v => !v)) return {ok:false, why:"All four answers are required."};
-      if(!["A","B","C","D"].includes(K)) return {ok:false, why:"Select the correct answer."};
-      // prevent duplicates within the same item to reduce garbage
+      if(opts.some(v => !v)) return {ok:false, why:"Reikalingi visi keturi atsakymai."};
+      if(!["A","B","C","D"].includes(K)) return {ok:false, why:"Pasirink teisingą variantą."};
       const uniq = new Set(opts.map(v => v.toLowerCase()));
-      if(uniq.size < 4) return {ok:false, why:"Answers must be unique."};
+      if(uniq.size < 4) return {ok:false, why:"Atsakymai turi skirtis."};
       return {ok:true};
     }
 
     function render() {
       list.innerHTML = "";
-      count.textContent = data.length + (data.length===1 ? " item" : " items");
+      count.textContent = data.length + (data.length===1 ? " įrašas" : " įrašų");
       data.forEach((item, idx)=>{
         const el = document.createElement("div");
         el.className = "item";
@@ -145,12 +128,12 @@
             <span class="pill">B: ${escapeHtml(item.answers[1])}</span>
             <span class="pill">C: ${escapeHtml(item.answers[2])}</span>
             <span class="pill">D: ${escapeHtml(item.answers[3])}</span>
-            <span class="pill" style="background:#132b1d;color:#b5f3c8">Correct: ${item.correct}</span>
+            <span class="pill" style="background:#132b1d;color:#b5f3c8">Teisingas: ${item.correct}</span>
           </div>
           ${item.note ? `<p class="hint" style="margin:.6rem 0 0">${escapeHtml(item.note)}</p>` : ""}
           <div class="btns" style="margin-top:10px">
-            <button class="ghost" data-act="edit" data-i="${idx}">Edit</button>
-            <button class="danger" data-act="remove" data-i="${idx}">Remove</button>
+            <button class="ghost" data-act="edit" data-i="${idx}">Redaguoti</button>
+            <button class="danger" data-act="remove" data-i="${idx}">Pašalinti</button>
           </div>
         `;
         list.appendChild(el);
@@ -180,14 +163,14 @@
       data.push(item);
       render();
       clearForm();
-      inform("Added.", "#7ad27a");
+      inform("Įrašyta.", "#7ad27a");
     });
 
     list.addEventListener("click", (e)=>{
       const btn = e.target.closest("button"); if(!btn) return;
       const act = btn.dataset.act, i = +btn.dataset.i;
       if(Number.isNaN(i) || !data[i]) return;
-      if(act==="remove"){ data.splice(i,1); render(); inform("Removed.", "#ffb27a"); }
+      if(act==="remove"){ data.splice(i,1); render(); inform("Pašalinta.", "#ffb27a"); }
       if(act==="edit"){
         const it = data[i];
         q.value = it.question;
@@ -195,29 +178,25 @@
         correct.value = it.correct; note.value = it.note || "";
         data.splice(i,1);
         render();
-        inform("Loaded to form for editing.", "#c7d3ff");
+        inform("Įkelta į formą redagavimui.", "#c7d3ff");
         q.focus();
       }
     });
 
     downloadBtn.addEventListener("click", () => {
-      if(data.length===0){ inform("Nothing to export.", "#ff8080"); return; }
+      if(data.length===0){ inform("Nėra ką eksportuoti.", "#ff8080"); return; }
       const blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
       const aTag = document.createElement("a");
       aTag.href = URL.createObjectURL(blob);
-      aTag.download = "kquiz_questions.json";
+      aTag.download = "kquiz_klausimai.json";
       document.body.appendChild(aTag);
       aTag.click();
       aTag.remove();
-      inform("Exported JSON.", "#7ad27a");
+      inform("JSON atsisiųstas.", "#7ad27a");
     });
 
     clearBtn.addEventListener("click", clearForm);
 
-    // Important: NO oninput/keyup validation. Users can type freely.
-    // Only run validateOnce() on explicit actions.
-
-    // Quality-of-life: simple autosize for textarea without notifications
     q.addEventListener("input", () => {
       q.style.height = "auto";
       q.style.height = Math.min(q.scrollHeight, 300) + "px";
@@ -225,4 +204,3 @@
   </script>
 </body>
 </html>
-
